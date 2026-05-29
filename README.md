@@ -40,8 +40,8 @@
 
 ```bash
 # Клонировать репозиторий
-git clone https://github.com/devdad-ru/booking-service-csharp.git
-cd booking-service-csharp
+git clone https://github.com/devdad-ru/booking-service-netcore.git
+cd booking-service-netcore
 
 # Поднять инфраструктуру
 docker compose up -d
@@ -93,7 +93,7 @@ dotnet ef database update
 
 ### 1. Сделайте форк
 
-Перейдите в репозиторий [devdad-ru/booking-service-csharp](https://github.com/devdad-ru/booking-service-csharp) и нажмите кнопку **Fork** в правом верхнем углу.
+Перейдите в репозиторий [devdad-ru/booking-service-netcore](https://github.com/devdad-ru/booking-service-netcore) и нажмите кнопку **Fork** в правом верхнем углу.
 
 ### 2. Разрешите запуск GitHub Actions
 
@@ -102,16 +102,14 @@ dotnet ef database update
 ### 3. Клонируйте свой форк
 
 ```bash
-git clone https://github.com/<ваш-username>/booking-service-csharp.git
-cd booking-service-csharp
+git clone https://github.com/<ваш-username>/booking-service-netcore.git
+cd booking-service-netcore
 ```
 
 ### 4. Создайте ветку для задачи
-Например: tasks/task1 (или task01)
-Триггеру автопроверки важно корректное название ветки и номера задачи (task1 или task01) другие названия веток не затриггерят проверку.
-(каждую последующую ветку с новой задачей нужно создавать от предыдущей ветки задачи: task1 от master, task2 от task1 и т.д.)
+
 ```bash
-git checkout -b tasks/task1
+git checkout -b task/<номер-задачи>
 ```
 
 ### 5. Выполните задачу и зафиксируйте изменения
@@ -119,38 +117,16 @@ git checkout -b tasks/task1
 ```bash
 git add .
 git commit -m "Решение задачи <номер>"
-git push origin tasks/task1
+git push origin task/<номер-задачи>
 ```
 
 ### 6. Создайте Pull Request в своём форке
 
 Откройте свой форк на GitHub и создайте **Pull Request** в ветку `master` **вашего форка** (не в родительский репозиторий).
 
-> При создании PR убедитесь, что base repository — это **ваш форк**, а не `devdad-ru/booking-service-csharp`.
-
-PR можно создать через GitHub в браузере или прямо из IDE, если в ней подключен ваш GitHub-аккаунт и есть функция создания Pull Request.
+> При создании PR убедитесь, что base repository — это **ваш форк**, а не `devdad-ru/booking-service-netcore`.
 
 После создания PR автоматически запустится workflow, который отправит ваше решение на проверку.
-
-### 7. Приложите ссылку на PR в ответ
-
-Сразу после создания PR скопируйте ссылку на него и отправьте её в ответе на задание на платформе.
-
-Пример ссылки:
-
-```text
-https://github.com/<ваш-username>/booking-service-csharp/pull/<номер-pr>
-```
-
-Важно: ссылку нужно отправить в течение **5 минут** после создания или обновления PR. Если ссылка не будет найдена в ответе на задание за это время, проверка не запустится.
-
-Если вы не успели отправить ссылку вовремя, отправьте ссылку в ответе на задание и сделайте новый `push` в ту же ветку PR.
-
-### 8. Если задание требует доработки
-
-Не создавайте новый PR. Внесите правки в той же ветке, сделайте новый commit и `push`.
-
-После этого нажмите кнопку "Редактировать" и "Отправить на проверку", чтобы запустить повторную проверку по уже вложенному PR.
 
 ## Архитектура
 
@@ -172,7 +148,7 @@ Booking Service принимает запросы на бронирование,
 ### Структура проекта
 
 ```
-booking-service-csharp/
+booking-service-netcore/
 ├── BookingService.sln
 ├── docker-compose.yml
 ├── docker-compose-mount/

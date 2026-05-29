@@ -17,10 +17,4 @@ public class CancelBookingErrorsHandler : IHandleMessages<CancelBookingJobByRequ
         _bookingService = bookingService;
         _logger = logger;
     }
-
-    // TODO: Task 01 — реализовать компенсирующую транзакцию (откат отмены бронирования)
-    public Task Handle(CancelBookingJobByRequestIdRequest message)
-    {
-        throw new NotImplementedException();
-    }
 }

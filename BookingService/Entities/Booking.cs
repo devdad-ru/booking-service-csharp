@@ -16,12 +16,6 @@ public class Booking
     public DateTimeOffset CreatedAt { get; private set; }
     public Guid? CatalogRequestId { get; private set; }
 
-    // TODO: Task 01 — время, когда была запрошена отмена подтверждённого бронирования
-    public DateTimeOffset? CancellationRequestedAt { get; private set; }
-
-    // TODO: Task 03 — версия для оптимистичной блокировки (EF Core xmin)
-    public uint Version { get; private set; }
-
     // Parameterless constructor required by EF Core
     private Booking() { }
 
@@ -78,8 +72,7 @@ public class Booking
     }
 
     /// <summary>
-    /// Отменить бронирование с учётом бизнес-правил.
-    /// TODO: Task 01 — добавить обработку статуса Confirmed (→ CancellationPending)
+    /// Отменить бронирование с учётом бизнес-правил
     /// </summary>
     public void Cancel(DateOnly currentDate)
     {
@@ -97,10 +90,4 @@ public class Booking
                 throw new BusinessException("Некорректный статус для отмены");
         }
     }
-
-    // TODO: Task 01 — завершить отмену: CancellationPending → Cancelled
-    public void CompleteCancellation() => throw new NotImplementedException();
-
-    // TODO: Task 01 — откатить отмену: CancellationPending → Confirmed (при ошибке DLQ)
-    public void RollbackCancellation() => throw new NotImplementedException();
 }

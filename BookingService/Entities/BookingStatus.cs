@@ -16,8 +16,4 @@ public enum BookingStatus
 
     /// <summary>Отменено (3)</summary>
     Cancelled = 3,
-
-    // TODO: Task 01 — добавить новый статус как часть компенсирующей транзакции
-    /// <summary>Ожидает завершения отмены (4)</summary>
-    CancellationPending = 4,
 }

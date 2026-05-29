@@ -5,6 +5,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
+    <!-- Увеличиваем таймаут для Testcontainers -->
+    <xunit.runner.visualstudio.testFrameworkOptions>
+      <TestTimeoutSeconds>120</TestTimeoutSeconds>
+    </xunit.runner.visualstudio.testFrameworkOptions>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,9 +25,9 @@
     <!-- Читаемые assertions -->
     <PackageReference Include="FluentAssertions" Version="7.0.0" />
     <!-- NullLogger и прочие абстракции -->
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
     <!-- IMemoryCache для тестов кэширования (Задача 10) -->
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -15,10 +15,7 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
     <PackageReference Include="Rebus" Version="8.4.0" />
     <PackageReference Include="Rebus.RabbitMq" Version="9.2.1" />
-    <!-- Force .NET 9 extensions to override Rebus.ServiceProvider upper-bound constraints -->
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0" />
-    <PackageReference Include="Rebus.ServiceProvider" Version="8.4.0" />
+    <PackageReference Include="Rebus.ServiceProvider" Version="9.3.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.3.1" />
   </ItemGroup>
 

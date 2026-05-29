@@ -5,9 +5,7 @@ using BookingService.Exceptions;
 using BookingService.Infrastructure.Data;
 using BookingService.Infrastructure.Messaging;
 using BookingService.Infrastructure.Messaging.Contracts;
-using BookingService.Infrastructure.Notifications;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace BookingService.Services;
 
@@ -22,26 +20,16 @@ public class BookingService
     private readonly ICurrentDateTimeProvider _dateTimeProvider;
     private readonly ILogger<BookingService> _logger;
 
-    // [Task 09] Опциональная зависимость — существующие тесты создают сервис без неё
-    private readonly INotificationService? _notificationService;
-
-    // [Task 10] Опциональная зависимость — существующие тесты создают сервис без неё
-    private readonly IMemoryCache? _cache;
-
     public BookingService(
         BookingRepository repository,
         BookingEventPublisher publisher,
         ICurrentDateTimeProvider dateTimeProvider,
-        ILogger<BookingService> logger,
-        INotificationService? notificationService = null,
-        IMemoryCache? cache = null)
+        ILogger<BookingService> logger)
     {
         _repository = repository;
         _publisher = publisher;
         _dateTimeProvider = dateTimeProvider;
         _logger = logger;
-        _notificationService = notificationService;
-        _cache = cache;
     }
 
     // === КОМАНДЫ (Use Cases) ===
@@ -178,16 +166,6 @@ public class BookingService
             booking.Id, booking.Status);
     }
 
-    // TODO: Task 01 — откат отмены бронирования (компенсирующая транзакция)
-    public Task HandleCancellationError(Guid requestId) => throw new NotImplementedException();
-
     /// <summary>Устаревший метод-заглушка — используйте HandleCancellationError</summary>
     public Task HandleError(Guid requestId) => HandleCancellationError(requestId);
-
-    // TODO: Task 02 — реализовать агрегирующий запрос статистики бронирований
-    public Task<StatisticsResponse> GetStatistics() => throw new NotImplementedException();
-
-    // TODO: Task 04 — возвращать историю изменений статусов для указанного бронирования
-    public Task<List<Entities.BookingStatusHistory>> GetBookingHistory(long bookingId)
-        => throw new NotImplementedException();
 }

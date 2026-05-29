@@ -66,11 +66,4 @@ public class BookingRepository
         await _context.SaveChangesAsync();
     }
 
-    // TODO: Task 02 — реализовать агрегирующий SQL-запрос статистики
-    public Task<StatisticsResponse> GetStatisticsAsync()
-        => throw new NotImplementedException();
-
-    // TODO: Task 03 — найти бронирования, застрявшие в CancellationPending
-    public Task<List<Booking>> FindStuckCancellationsAsync(DateTimeOffset cancellationRequestedBefore)
-        => throw new NotImplementedException();
 }
