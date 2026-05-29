@@ -1,0 +1,108 @@
+services:
+  booking-service:
+    container_name: booking-service
+    build:
+      context: .
+      dockerfile: BookingService/Dockerfile
+    ports:
+      - "8001:8080"
+    volumes:
+      - ./docker-compose-mount/BookingService.Host/appsettings.json:/app/appsettings.json
+      - ./docker-compose-mount/BookingService.Host/appsettings.Production.json:/app/appsettings.Production.json
+      - ./logs/booking-service:/var/log/booking-service/bookings
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    depends_on:
+      booking-service-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # PostgreSQL для Booking Service
+  booking-service-db:
+    image: postgres:16-alpine
+    container_name: booking-service-db
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: "booking_service"
+      POSTGRES_USER: "booking_admin"
+      POSTGRES_PASSWORD: "admin_booking"
+      PGDATA: /data/postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U booking_admin -d postgres"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    volumes:
+      - booking-db-data:/data/postgres
+
+  # RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+
+  # Catalog Service (.NET — готовый Docker-образ, менять не нужно)
+  catalog-service:
+    container_name: catalog-service
+    image: ghcr.io/nazarovsa-mentorship/pet-booking-service-catalog/catalog-host:2.1.2
+    platform: linux/amd64
+    ports:
+      - "8000:8080"
+    volumes:
+      - ./docker-compose-mount/BookingService.Catalog.Host/appsettings.json:/app/appsettings.json
+      - ./docker-compose-mount/BookingService.Catalog.Host/appsettings.Production.json:/app/appsettings.Production.json
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    depends_on:
+      catalog-db:
+        condition: service_healthy
+      catalog-migrations:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+
+  # Migrations для Catalog DB
+  catalog-migrations:
+    container_name: catalog-migrations
+    image: ghcr.io/nazarovsa-mentorship/pet-booking-service-catalog/catalog-migrations:2.1.2
+    platform: linux/amd64
+    environment:
+      DOTNET_ENVIRONMENT: Production
+    depends_on:
+      catalog-db:
+        condition: service_healthy
+
+  # PostgreSQL для Catalog Service
+  catalog-db:
+    image: postgres:16-alpine
+    container_name: catalog-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: "booking_service_catalog"
+      POSTGRES_USER: "catalog_admin"
+      POSTGRES_PASSWORD: "admin_catalog"
+      PGDATA: /data/postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U catalog_admin -d postgres"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    volumes:
+      - catalog-db-data:/data/postgres
+
+volumes:
+  booking-db-data:
+  catalog-db-data:
