@@ -1,0 +1,48 @@
+## .NET / C#
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.DotSettings.user
+
+## Rider / JetBrains
+.idea/
+*.sln.iml
+
+## VS Code
+.vscode/
+
+## Build output
+out/
+publish/
+artifacts/
+
+## NuGet
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+## Logs
+logs/
+*.log
+
+## Environment files
+.env
+.env.local
+*.env
+
+## macOS
+.DS_Store
+
+## Windows
+Thumbs.db
