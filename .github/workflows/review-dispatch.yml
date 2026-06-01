@@ -1,0 +1,29 @@
+name: Dispatch Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request review via relay
+        run: |
+          HTTP_CODE=$(curl -s -o response.txt -w "%{http_code}" -X POST "https://review-relay.devdad.workers.dev" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "repo": "${{ github.repository }}",
+              "branch": "${{ github.event.pull_request.head.ref }}",
+              "pr_number": "${{ github.event.pull_request.number }}"
+            }')
+
+          echo "HTTP status: $HTTP_CODE"
+          echo "Response: $(cat response.txt)"
+
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "::error::Relay returned HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+          echo "Запрос на ревью отправлен"
