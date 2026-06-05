@@ -135,6 +135,7 @@ public class BookingService
             booking.Id, booking.Status);
 
         booking.Confirm();
+        await _repository.SaveAsync(booking);
 
         _logger.LogInformation("Бронирование успешно подтверждено: id={Id}, новый статус={Status}",
             booking.Id, booking.Status);
@@ -163,6 +164,28 @@ public class BookingService
         await _repository.SaveAsync(booking);
 
         _logger.LogInformation("Бронирование успешно отменено: id={Id}, новый статус={Status}",
+            booking.Id, booking.Status);
+    }
+
+    /// <summary>
+    /// Откатить отмену при ошибке Catalog Service (команда попала в DLQ).
+    /// Вызывается из CancelBookingErrorsHandler.
+    /// </summary>
+    public async Task HandleCancellationError(Guid requestId)
+    {
+        _logger.LogWarning("Получена ошибка отмены из DLQ: requestId={RequestId}. Откатываем статус.", requestId);
+
+        var booking = await _repository.FindByCatalogRequestIdAsync(requestId);
+        if (booking is null)
+        {
+            _logger.LogWarning("Бронирование не найдено по requestId: {RequestId}. Событие проигнорировано.", requestId);
+            return;
+        }
+
+        booking.RollbackCancellation();
+        await _repository.SaveAsync(booking);
+
+        _logger.LogInformation("Откат отмены выполнен: id={Id}, статус восстановлен до {Status}",
             booking.Id, booking.Status);
     }
 

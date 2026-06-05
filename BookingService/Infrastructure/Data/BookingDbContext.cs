@@ -53,6 +53,10 @@ public class BookingDbContext : DbContext
                 .HasColumnName("catalog_request_id")
                 .HasColumnType("uuid");
 
+            entity.Property(b => b.CancellationRequestedAt)
+                .HasColumnName("cancellation_requested_at")
+                .HasColumnType("timestamp with time zone");
+
             entity.HasIndex(b => b.Status)
                 .HasDatabaseName("idx_bookings_status");
 

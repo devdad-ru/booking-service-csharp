@@ -16,6 +16,9 @@ public class Booking
     public DateTimeOffset CreatedAt { get; private set; }
     public Guid? CatalogRequestId { get; private set; }
 
+    // Время отправки команды отмены — для поиска зависших отмен (Задача 03)
+    public DateTimeOffset? CancellationRequestedAt { get; private set; }
+
     // Parameterless constructor required by EF Core
     private Booking() { }
 
@@ -72,7 +75,8 @@ public class Booking
     }
 
     /// <summary>
-    /// Отменить бронирование с учётом бизнес-правил
+    /// Отменить бронирование с учётом бизнес-правил.
+    /// Подтверждённые бронирования переходят в CancellationPending (Compensating Transaction).
     /// </summary>
     public void Cancel(DateOnly currentDate)
     {
@@ -84,10 +88,43 @@ public class Booking
                 Status = BookingStatus.Cancelled;
                 break;
 
+            case BookingStatus.Confirmed:
+                // Отменяем подтверждённое бронирование
+                if (currentDate >= BookedFrom)
+                    throw new BusinessException("Нельзя отменить начавшееся бронирование");
+                Status = BookingStatus.Cancelled;
+                break;
+
             case BookingStatus.None:
             case BookingStatus.Cancelled:
             default:
                 throw new BusinessException("Некорректный статус для отмены");
         }
+    }
+
+    /// <summary>
+    /// Завершить отмену после успешной обработки командой Catalog Service.
+    /// Переход: CancellationPending → Cancelled.
+    /// </summary>
+    public void CompleteCancellation()
+    {
+        if (Status != BookingStatus.CancellationPending)
+            throw new BusinessException($"Невозможно завершить отмену: ожидается статус {BookingStatus.CancellationPending}, текущий — {Status}");
+
+        Status = BookingStatus.Cancelled;
+        CancellationRequestedAt = null;
+    }
+
+    /// <summary>
+    /// Откатить отмену при ошибке Catalog Service (DLQ).
+    /// Переход: CancellationPending → Confirmed.
+    /// </summary>
+    public void RollbackCancellation()
+    {
+        if (Status != BookingStatus.CancellationPending)
+            throw new BusinessException($"Невозможно откатить отмену: ожидается статус {BookingStatus.CancellationPending}, текущий — {Status}");
+
+        Status = BookingStatus.Confirmed;
+        CancellationRequestedAt = null;
     }
 }

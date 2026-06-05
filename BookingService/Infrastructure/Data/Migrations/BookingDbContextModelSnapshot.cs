@@ -38,6 +38,10 @@ partial class BookingDbContextModelSnapshot : ModelSnapshot
                 .HasColumnType("date")
                 .HasColumnName("booked_to");
 
+            b.Property<DateTimeOffset?>("CancellationRequestedAt")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("cancellation_requested_at");
+
             b.Property<Guid?>("CatalogRequestId")
                 .HasColumnType("uuid")
                 .HasColumnName("catalog_request_id");

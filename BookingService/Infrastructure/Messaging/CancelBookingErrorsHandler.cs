@@ -17,4 +17,13 @@ public class CancelBookingErrorsHandler : IHandleMessages<CancelBookingJobByRequ
         _bookingService = bookingService;
         _logger = logger;
     }
+
+    public async Task Handle(CancelBookingJobByRequestIdRequest message)
+    {
+        _logger.LogWarning(
+            "Получена ошибка из DLQ: eventId={EventId}, requestId={RequestId}",
+            message.EventId, message.RequestId);
+
+        await _bookingService.HandleCancellationError(message.RequestId);
+    }
 }
