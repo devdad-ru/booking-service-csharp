@@ -16,4 +16,7 @@ public enum BookingStatus
 
     /// <summary>Отменено (3)</summary>
     Cancelled = 3,
+    
+    /// <summary>Ожидает отмены (4)</summary>
+    CancellationPending = 4,
 }

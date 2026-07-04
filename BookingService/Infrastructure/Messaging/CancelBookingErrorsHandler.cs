@@ -17,4 +17,7 @@ public class CancelBookingErrorsHandler : IHandleMessages<CancelBookingJobByRequ
         _bookingService = bookingService;
         _logger = logger;
     }
+
+    public Task Handle(CancelBookingJobByRequestIdRequest message)
+        => _bookingService.HandleCancellationError(message.RequestId);
 }

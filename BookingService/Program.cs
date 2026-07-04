@@ -1,8 +1,8 @@
 using BookingService.Configuration;
 using BookingService.Exceptions;
-using BookingService.Infrastructure.BackgroundJobs;
 using BookingService.Infrastructure.Data;
 using BookingService.Infrastructure.Messaging;
+using BookingService.Infrastructure.Messaging.Contracts;
 using BookingService.Mappers;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -40,7 +40,7 @@ builder.Services.AddDbContext<BookingDbContext>(options =>
 builder.Services.AddScoped<BookingRepository>();
 
 // ---- Business Services ----
-builder.Services.AddScoped<Services.BookingService>();
+builder.Services.AddScoped<BookingService.Services.BookingService>();
 builder.Services.AddScoped<BookingMapper>();
 builder.Services.AddSingleton<ICurrentDateTimeProvider, CurrentDateTimeProvider>();
 
@@ -48,15 +48,21 @@ builder.Services.AddSingleton<ICurrentDateTimeProvider, CurrentDateTimeProvider>
 builder.Services.AddSingleton(rabbitMqSettings);
 builder.Services.AddScoped<BookingEventPublisher>();
 
-builder.Services.AddRebus(configure => configure
-    .Transport(t => t
-        .UseRabbitMq(rabbitMqSettings.ConnectionString, rabbitMqSettings.InputQueue)
-        .ExchangeNames(rabbitMqSettings.DirectExchange, rabbitMqSettings.TopicExchange))
-    .Routing(r => r.TypeBased()
-        .Map<Infrastructure.Messaging.Contracts.CreateBookingJobRequest>(rabbitMqSettings.InputQueue)
-        .Map<Infrastructure.Messaging.Contracts.CancelBookingJobByRequestIdRequest>(rabbitMqSettings.InputQueue)
-        .Map<Infrastructure.Messaging.Contracts.BookingJobConfirmed>(rabbitMqSettings.InputQueue)
-        .Map<Infrastructure.Messaging.Contracts.BookingJobDenied>(rabbitMqSettings.InputQueue)));
+builder.Services.AddRebus(
+    configure => configure
+        .Transport(t => t
+            .UseRabbitMq(rabbitMqSettings.ConnectionString, rabbitMqSettings.InputQueue)
+            .ExchangeNames(rabbitMqSettings.DirectExchange, rabbitMqSettings.TopicExchange))
+        .Routing(r => r.TypeBased()
+            .Map<CreateBookingJobRequest>(rabbitMqSettings.InputQueue)
+            .Map<CancelBookingJobByRequestIdRequest>(rabbitMqSettings.InputQueue)
+            .Map<BookingJobConfirmed>(rabbitMqSettings.InputQueue)
+            .Map<BookingJobDenied>(rabbitMqSettings.InputQueue)),
+    onCreated: async bus =>
+    {
+        await bus.Subscribe<BookingJobConfirmed>();
+        await bus.Subscribe<BookingJobDenied>();
+    });
 
 builder.Services.AddRebusHandler<BookingEventsHandler>();
 builder.Services.AddRebusHandler<CancelBookingErrorsHandler>();
@@ -70,13 +76,6 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
     await db.Database.MigrateAsync();
 }
-
-// Запустить Rebus и подписаться на события от Catalog Service
-app.UseRebus(async bus =>
-{
-    await bus.Subscribe<Infrastructure.Messaging.Contracts.BookingJobConfirmed>();
-    await bus.Subscribe<Infrastructure.Messaging.Contracts.BookingJobDenied>();
-});
 
 // Глобальная обработка ошибок (RFC 7807 Problem Details)
 app.UseExceptionHandler(exceptionApp =>

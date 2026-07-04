@@ -14,6 +14,7 @@ public class Booking
     public DateOnly BookedFrom { get; private set; }
     public DateOnly BookedTo { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
+    public DateTimeOffset? CancellationRequestedAt { get; private set; }
     public Guid? CatalogRequestId { get; private set; }
 
     // Parameterless constructor required by EF Core
@@ -22,7 +23,12 @@ public class Booking
     /// <summary>
     /// Factory method для создания нового бронирования с валидацией бизнес-правил
     /// </summary>
-    public static Booking Create(long userId, long resourceId, DateOnly bookedFrom, DateOnly bookedTo, DateTimeOffset createdAt)
+    public static Booking Create(
+        long userId,
+        long resourceId,
+        DateOnly bookedFrom,
+        DateOnly bookedTo,
+        DateTimeOffset createdAt)
     {
         if (userId <= 0)
             throw new BusinessException($"Некорректный идентификатор пользователя {userId}");
@@ -78,16 +84,37 @@ public class Booking
     {
         switch (Status)
         {
+            case BookingStatus.None:
+            case BookingStatus.Cancelled: 
+            case BookingStatus.CancellationPending:
+                throw new BusinessException("Отмена уже в обработке");
+                
             case BookingStatus.AwaitConfirmation:
                 // Бронирование ещё не подтверждено Catalog Service —
                 // отменяем немедленно, откат не нужен
                 Status = BookingStatus.Cancelled;
                 break;
 
-            case BookingStatus.None:
-            case BookingStatus.Cancelled:
+            case BookingStatus.Confirmed:
+                Status = BookingStatus.CancellationPending;
+                break;
+            
             default:
                 throw new BusinessException("Некорректный статус для отмены");
         }
+    }
+    
+    public void ConfirmCancellation()
+    {
+        if (Status != BookingStatus.CancellationPending)
+            throw new BusinessException($"Отмена не находится в процессе обработки, текущий статус: {Status}");
+        Status = BookingStatus.Cancelled;
+    }
+    
+    public void RollbackCancellation()
+    {
+        if (Status != BookingStatus.CancellationPending)
+            throw new BusinessException($"Отмена не находится в процессе обработки, текущий статус: {Status}");
+        Status = BookingStatus.Confirmed;
     }
 }

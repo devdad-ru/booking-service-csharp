@@ -168,4 +168,36 @@ public class BookingService
 
     /// <summary>Устаревший метод-заглушка — используйте HandleCancellationError</summary>
     public Task HandleError(Guid requestId) => HandleCancellationError(requestId);
+
+    /// <summary>
+    /// Обработать ошибку отмены
+    /// </summary>
+    /// <param name="requestId"></param>
+    /// <returns></returns>
+    public async Task HandleCancellationError(Guid requestId)
+    {
+        _logger.LogInformation("Получено событие CancellationError: requestId={RequestId}", requestId);
+        var booking = await _repository.FindByCatalogRequestIdAsync(requestId);
+        if (booking is null)
+        {
+            _logger.LogWarning("Бронирование не найдено по requestId: {RequestId}. Событие проигнорировано.", requestId);
+            return;
+        }
+
+        if (booking.Status != BookingStatus.CancellationPending)
+        {
+            _logger.LogInformation("Некорректный статус id={Id}, статус={Status}. Событие проигнорировано.",
+                booking.Id, booking.Status);
+            return;
+        }
+        
+        _logger.LogInformation("Найдено бронирование: id={Id}, статус={Status}. Выполняем rollback...",
+            booking.Id, booking.Status);
+
+        booking.RollbackCancellation();
+        await _repository.SaveAsync(booking);
+
+        _logger.LogInformation("Rollback проведен успешно: id={Id}, новый статус={Status}",
+            booking.Id, booking.Status);
+    }
 }
