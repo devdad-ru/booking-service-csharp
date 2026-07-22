@@ -147,6 +147,7 @@ public class BookingService
             booking.Id, booking.Status);
 
         booking.Confirm();
+        await _repository.SaveAsync(booking);
 
         _logger.LogInformation("Бронирование успешно подтверждено: id={Id}, новый статус={Status}",
             booking.Id, booking.Status);
@@ -179,7 +180,32 @@ public class BookingService
     }
 
     // TODO: Task 01 — откат отмены бронирования (компенсирующая транзакция)
-    public Task HandleCancellationError(Guid requestId) => throw new NotImplementedException();
+    public async Task HandleCancellationError(Guid requestId)
+    {
+        _logger.LogWarning("Received cancellation error from DLQ: requestId={RequestId}", requestId);
+
+        var booking = await _repository.FindByCatalogRequestIdAsync(requestId);
+        if (booking is null)
+        {
+            _logger.LogWarning("Booking was not found by requestId: {RequestId}. Cancellation error ignored.", requestId);
+            return;
+        }
+
+        if (booking.Status != BookingStatus.CancellationPending)
+        {
+            _logger.LogWarning(
+                "Cancellation error ignored for booking id={Id}, requestId={RequestId}, status={Status}",
+                booking.Id, requestId, booking.Status);
+            return;
+        }
+
+        booking.RollbackCancellation();
+        await _repository.SaveAsync(booking);
+
+        _logger.LogInformation(
+            "Cancellation rolled back for booking id={Id}, requestId={RequestId}, status={Status}",
+            booking.Id, requestId, booking.Status);
+    }
 
     /// <summary>Устаревший метод-заглушка — используйте HandleCancellationError</summary>
     public Task HandleError(Guid requestId) => HandleCancellationError(requestId);

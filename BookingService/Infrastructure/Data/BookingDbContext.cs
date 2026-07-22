@@ -17,6 +17,8 @@ public class BookingDbContext : DbContext
 
             entity.HasKey(b => b.Id);
 
+            entity.Ignore(b => b.Version);
+
             entity.Property(b => b.Id)
                 .HasColumnName("id")
                 .UseIdentityByDefaultColumn();
@@ -52,6 +54,10 @@ public class BookingDbContext : DbContext
             entity.Property(b => b.CatalogRequestId)
                 .HasColumnName("catalog_request_id")
                 .HasColumnType("uuid");
+
+            entity.Property(b => b.CancellationRequestedAt)
+                .HasColumnName("cancellation_requested_at")
+                .HasColumnType("timestamp with time zone");
 
             entity.HasIndex(b => b.Status)
                 .HasDatabaseName("idx_bookings_status");

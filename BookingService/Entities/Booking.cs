@@ -38,7 +38,7 @@ public class Booking
 
         var currentDate = DateOnly.FromDateTime(createdAt.UtcDateTime);
 
-        if (bookedFrom <= currentDate)
+        if (bookedFrom < currentDate)
             throw new BusinessException("Дата начала бронирования должна быть больше текущей даты");
 
         if (bookedTo < bookedFrom)
@@ -91,7 +91,16 @@ public class Booking
                 Status = BookingStatus.Cancelled;
                 break;
 
+            case BookingStatus.Confirmed:
+                if (currentDate >= BookedFrom)
+                    throw new BusinessException("Нельзя отменить уже начавшееся бронирование");
+
+                Status = BookingStatus.CancellationPending;
+                CancellationRequestedAt = DateTimeOffset.UtcNow;
+                break;
+
             case BookingStatus.None:
+            case BookingStatus.CancellationPending:
             case BookingStatus.Cancelled:
             default:
                 throw new BusinessException("Некорректный статус для отмены");
@@ -99,8 +108,22 @@ public class Booking
     }
 
     // TODO: Task 01 — завершить отмену: CancellationPending → Cancelled
-    public void CompleteCancellation() => throw new NotImplementedException();
+    public void CompleteCancellation()
+    {
+        if (Status != BookingStatus.CancellationPending)
+            throw new BusinessException($"Cancellation can be completed only from {BookingStatus.CancellationPending} status");
+
+        Status = BookingStatus.Cancelled;
+        CancellationRequestedAt = null;
+    }
 
     // TODO: Task 01 — откатить отмену: CancellationPending → Confirmed (при ошибке DLQ)
-    public void RollbackCancellation() => throw new NotImplementedException();
+    public void RollbackCancellation()
+    {
+        if (Status != BookingStatus.CancellationPending)
+            throw new BusinessException($"Cancellation can be rolled back only from {BookingStatus.CancellationPending} status");
+
+        Status = BookingStatus.Confirmed;
+        CancellationRequestedAt = null;
+    }
 }
