@@ -38,7 +38,7 @@ public class Booking
 
         var currentDate = DateOnly.FromDateTime(createdAt.UtcDateTime);
 
-        if (bookedFrom < currentDate)
+        if (bookedFrom <= currentDate)
             throw new BusinessException("Дата начала бронирования должна быть больше текущей даты");
 
         if (bookedTo < bookedFrom)
@@ -111,7 +111,7 @@ public class Booking
     public void CompleteCancellation()
     {
         if (Status != BookingStatus.CancellationPending)
-            throw new BusinessException($"Cancellation can be completed only from {BookingStatus.CancellationPending} status");
+            throw new BusinessException($"Завершение отмены доступно только из статуса {BookingStatus.CancellationPending}");
 
         Status = BookingStatus.Cancelled;
         CancellationRequestedAt = null;
@@ -121,7 +121,7 @@ public class Booking
     public void RollbackCancellation()
     {
         if (Status != BookingStatus.CancellationPending)
-            throw new BusinessException($"Cancellation can be rolled back only from {BookingStatus.CancellationPending} status");
+            throw new BusinessException($"Откат отмены доступен только из статуса {BookingStatus.CancellationPending}");
 
         Status = BookingStatus.Confirmed;
         CancellationRequestedAt = null;

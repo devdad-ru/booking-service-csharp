@@ -62,6 +62,12 @@ partial class BookingDbContextModelSnapshot : ModelSnapshot
                 .HasColumnType("bigint")
                 .HasColumnName("user_id");
 
+            b.Property<uint>("Version")
+                .IsConcurrencyToken()
+                .ValueGeneratedOnAddOrUpdate()
+                .HasColumnType("xid")
+                .HasColumnName("xmin");
+
             b.HasKey("Id");
 
             b.HasIndex("ResourceId")

@@ -17,7 +17,11 @@ public class BookingDbContext : DbContext
 
             entity.HasKey(b => b.Id);
 
-            entity.Ignore(b => b.Version);
+            entity.Property(b => b.Version)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .IsConcurrencyToken()
+                .ValueGeneratedOnAddOrUpdate();
 
             entity.Property(b => b.Id)
                 .HasColumnName("id")
