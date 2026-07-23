@@ -211,7 +211,8 @@ public class BookingService
     public Task HandleError(Guid requestId) => HandleCancellationError(requestId);
 
     // TODO: Task 02 — реализовать агрегирующий запрос статистики бронирований
-    public Task<StatisticsResponse> GetStatistics() => throw new NotImplementedException();
+    public Task<StatisticsResponse> GetStatistics()
+        => _repository.GetStatisticsAsync();
 
     // TODO: Task 04 — возвращать историю изменений статусов для указанного бронирования
     public Task<List<Entities.BookingStatusHistory>> GetBookingHistory(long bookingId)

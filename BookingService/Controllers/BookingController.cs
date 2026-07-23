@@ -54,6 +54,12 @@ public class BookingController : ControllerBase
         return _mapper.ToResponseList(bookings);
     }
 
+    /// <summary>Получить агрегированную статистику бронирований</summary>
+    [HttpGet("/api/bookings/statistics")]
+    [ProducesResponseType<StatisticsResponse>(StatusCodes.Status200OK)]
+    public async Task<StatisticsResponse> GetStatistics()
+        => await _bookingService.GetStatistics();
+
     /// <summary>Получить статус бронирования по ID</summary>
     [HttpGet("{id:long}/status")]
     [ProducesResponseType<BookingStatus>(StatusCodes.Status200OK)]
