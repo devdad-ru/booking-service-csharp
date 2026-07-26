@@ -66,6 +66,10 @@ public class BookingDbContext : DbContext
             entity.HasIndex(b => b.Status)
                 .HasDatabaseName("idx_bookings_status");
 
+            entity.HasIndex(b => b.CancellationRequestedAt)
+                .HasDatabaseName("idx_bookings_cancellation_pending")
+                .HasFilter("status = 4");
+
             entity.HasIndex(b => b.UserId)
                 .HasDatabaseName("idx_bookings_user_id");
 

@@ -134,23 +134,47 @@ public class BookingService
     /// </summary>
     public async Task HandleBookingJobConfirmed(Guid requestId)
     {
-        _logger.LogInformation("Получено событие BookingJobConfirmed: requestId={RequestId}", requestId);
+        _logger.LogInformation("Received BookingJobConfirmed: requestId={RequestId}", requestId);
 
-        var booking = await _repository.FindByCatalogRequestIdAsync(requestId);
-        if (booking is null)
+        for (var attempt = 1; attempt <= 2; attempt++)
         {
-            _logger.LogWarning("Бронирование не найдено по requestId: {RequestId}. Событие проигнорировано.", requestId);
-            return;
+            var booking = await _repository.FindByCatalogRequestIdAsync(requestId);
+            if (booking is null)
+            {
+                _logger.LogWarning("Booking was not found by requestId: {RequestId}. Event ignored.", requestId);
+                return;
+            }
+
+            if (booking.Status == BookingStatus.CancellationPending)
+            {
+                _logger.LogWarning(
+                    "BookingJobConfirmed ignored because booking cancellation is already pending: id={Id}, requestId={RequestId}",
+                    booking.Id, requestId);
+                return;
+            }
+
+            _logger.LogInformation("Confirming booking: id={Id}, status={Status}", booking.Id, booking.Status);
+
+            booking.Confirm();
+
+            try
+            {
+                await _repository.SaveAsync(booking);
+
+                _logger.LogInformation("Booking confirmed: id={Id}, status={Status}", booking.Id, booking.Status);
+                return;
+            }
+            catch (DbUpdateConcurrencyException ex) when (attempt == 1)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Concurrency conflict while confirming booking for requestId={RequestId}; reloading and retrying",
+                    requestId);
+
+                foreach (var entry in ex.Entries)
+                    await entry.ReloadAsync();
+            }
         }
-
-        _logger.LogInformation("Найдено бронирование: id={Id}, статус={Status}. Подтверждаем...",
-            booking.Id, booking.Status);
-
-        booking.Confirm();
-        await _repository.SaveAsync(booking);
-
-        _logger.LogInformation("Бронирование успешно подтверждено: id={Id}, новый статус={Status}",
-            booking.Id, booking.Status);
     }
 
     /// <summary>

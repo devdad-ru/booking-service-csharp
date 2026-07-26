@@ -66,6 +66,7 @@ builder.Services.AddRebus(
 
 builder.Services.AddRebusHandler<BookingEventsHandler>();
 builder.Services.AddRebusHandler<CancelBookingErrorsHandler>();
+builder.Services.AddHostedService<StuckCancellationsJob>();
 
 // ---- App ----
 var app = builder.Build();
