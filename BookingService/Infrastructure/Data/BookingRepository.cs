@@ -10,7 +10,7 @@ namespace BookingService.Infrastructure.Data;
 public class BookingRepository
 {
     private readonly BookingDbContext _context;
-
+    private const int TOP_RESOURCES_COUNT = 5;
     public BookingRepository(BookingDbContext context)
     {
         _context = context;
@@ -49,6 +49,11 @@ public class BookingRepository
             .ToListAsync();
     }
 
+    public async Task<List<Entities.BookingStatusHistory>> GetBookingHistoryAsync(long bookingId)
+    {
+        return await _context.BookingStatusHistories.Where(x => x.BookingId == bookingId).OrderBy(x => x.ChangedAt).ToListAsync();
+    }
+
     /// <summary>
     /// Получить только статус бронирования по ID
     /// </summary>
@@ -66,11 +71,40 @@ public class BookingRepository
         await _context.SaveChangesAsync();
     }
 
-    // TODO: Task 02 — реализовать агрегирующий SQL-запрос статистики
-    public Task<StatisticsResponse> GetStatisticsAsync()
-        => throw new NotImplementedException();
+    public async Task<StatisticsResponse> GetStatisticsAsync()
+    {
+        var totalBookingsCount = await _context.Bookings.CountAsync();
 
-    // TODO: Task 03 — найти бронирования, застрявшие в CancellationPending
-    public Task<List<Booking>> FindStuckCancellationsAsync(DateTimeOffset cancellationRequestedBefore)
-        => throw new NotImplementedException();
+        var statusCounts = await _context.Bookings.GroupBy(x => x.Status).Select(x =>
+                new StatusCount
+                {
+                    Status = x.Key,
+                    Count = x.Count()
+                }
+            ).ToListAsync();
+
+        var top5 = await _context.Bookings.GroupBy(x => x.ResourceId).Select(x => 
+            new ResourceCount
+            {
+                ResourceId = x.Key,
+                BookingCount = x.Count()
+            }
+        ).OrderByDescending(x => x.BookingCount).Take(TOP_RESOURCES_COUNT).ToListAsync();
+
+        return new StatisticsResponse
+        {
+            TotalCount = totalBookingsCount,
+            ByStatus = statusCounts,
+            TopResources = top5
+        };
+    }
+
+    // бронирования, застрявшие в CancellationPending
+    public async Task<List<Booking>> FindStuckCancellationsAsync(DateTimeOffset cancellationRequestedBefore)
+    {
+        return await _context.Bookings.Where(
+            b => b.Status == BookingStatus.CancellationPending
+            && b.CancellationRequestedAt!.Value < cancellationRequestedBefore)
+            .ToListAsync();
+    }
 }

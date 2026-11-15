@@ -6,7 +6,6 @@ using BookingService.Infrastructure.Data;
 using BookingService.Infrastructure.Messaging;
 using BookingService.Infrastructure.Messaging.Contracts;
 using BookingService.Infrastructure.Notifications;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace BookingService.Services;
@@ -27,6 +26,8 @@ public class BookingService
 
     // [Task 10] Опциональная зависимость — существующие тесты создают сервис без неё
     private readonly IMemoryCache? _cache;
+
+    private const int DB_CONCURRENCY_TRIES_COUNT = 10;
 
     public BookingService(
         BookingRepository repository,
@@ -143,10 +144,24 @@ public class BookingService
             return;
         }
 
+        if (booking.Status == BookingStatus.CancellationPending)
+        {
+            _logger.LogWarning("Бронирование: id={Id}, статус={Status} ожидает отмены, подтвердить не получится",
+                booking.Id, booking.Status);
+            return;
+        }
+
         _logger.LogInformation("Найдено бронирование: id={Id}, статус={Status}. Подтверждаем...",
             booking.Id, booking.Status);
 
         booking.Confirm();
+
+        var saveResult = await ConfirmWithConcurrencyRetryAsync(booking);
+        if (!saveResult)
+        {
+            _logger.LogWarning("Бронирование с id={BookingId} уже было отменено, невозможно подтвердить", booking.Id);
+            return;
+        }
 
         _logger.LogInformation("Бронирование успешно подтверждено: id={Id}, новый статус={Status}",
             booking.Id, booking.Status);
@@ -178,16 +193,70 @@ public class BookingService
             booking.Id, booking.Status);
     }
 
-    // TODO: Task 01 — откат отмены бронирования (компенсирующая транзакция)
-    public Task HandleCancellationError(Guid requestId) => throw new NotImplementedException();
+    public async Task HandleCancellationError(Guid requestId)
+    {
+        _logger.LogInformation("Получено событие CancellationError: requestId={RequestId}", requestId);
+        var booking = await _repository.FindByCatalogRequestIdAsync(requestId);
+        if (booking is null)
+        {
+            _logger.LogWarning("Бронирование не найдено по requestId: {RequestId}. Событие проигнорировано.", requestId);
+            return;
+        }
 
-    /// <summary>Устаревший метод-заглушка — используйте HandleCancellationError</summary>
-    public Task HandleError(Guid requestId) => HandleCancellationError(requestId);
+        _logger.LogInformation("Найдено бронирование: id={Id}, статус={Status}. Откатываем отмену...",
+            booking.Id, booking.Status);
+
+        booking.RollbackCancellation();
+        await _repository.SaveAsync(booking);
+
+        _logger.LogInformation("Откат отмены бронирования успешно завершен: id={Id}, новый статус={Status}",
+            booking.Id, booking.Status);
+    }
+
+    /// <summary>
+    /// Обработка DbUpdateConcurrencyException, повтор операции с перезагрузкой сущности
+    /// </summary>
+    /// <param name="booking"></param>
+    /// <returns></returns>
+    private async Task<bool> ConfirmWithConcurrencyRetryAsync(Booking booking)
+    {
+        bool saveFailed = false;
+        int tryCount = 0;
+
+        do
+        {
+            try
+            {
+                await _repository.SaveAsync(booking);
+                saveFailed = false;
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                if (tryCount == DB_CONCURRENCY_TRIES_COUNT)
+                    throw new BusinessException($"Исчерпано количество попыток обработки DbUpdateConcurrencyException при сохранении бронирования id={booking.Id}");
+
+                saveFailed = true;
+                tryCount++;
+
+                await ex.Entries.Single().ReloadAsync();
+
+                if (booking.Status == BookingStatus.CancellationPending)
+                {
+                    _logger.LogWarning("Бронирование с id={BookingId} уже было отменено, невозможно подтвердить", booking.Id);
+                    return false;
+                }
+
+                booking.Confirm();
+            }
+
+        } while (saveFailed);
+
+        return true;
+    }
 
     // TODO: Task 02 — реализовать агрегирующий запрос статистики бронирований
-    public Task<StatisticsResponse> GetStatistics() => throw new NotImplementedException();
+    public Task<StatisticsResponse> GetStatistics() => _repository.GetStatisticsAsync();
 
-    // TODO: Task 04 — возвращать историю изменений статусов для указанного бронирования
-    public Task<List<Entities.BookingStatusHistory>> GetBookingHistory(long bookingId)
-        => throw new NotImplementedException();
+    public async Task<List<Entities.BookingStatusHistory>> GetBookingHistory(long bookingId)
+        => await _repository.GetBookingHistoryAsync(bookingId);
 }
