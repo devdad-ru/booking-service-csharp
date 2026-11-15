@@ -28,6 +28,8 @@ public class BookingService
     // [Task 10] Опциональная зависимость — существующие тесты создают сервис без неё
     private readonly IMemoryCache? _cache;
 
+    private const int DB_CONCURRENCY_TRIES_COUNT = 10;
+
     public BookingService(
         BookingRepository repository,
         BookingEventPublisher publisher,
@@ -155,7 +157,12 @@ public class BookingService
 
         booking.Confirm();
 
-        await _repository.ConcurrencyBulkSaveAsync(booking);
+        var saveResult = await ConfirmWithConcurrencyRetryAsync(booking);
+        if (!saveResult)
+        {
+            _logger.LogWarning("Бронирование с id={BookingId} уже было отменено, невозможно подтвердить", booking.Id);
+            return;
+        }
 
         _logger.LogInformation("Бронирование успешно подтверждено: id={Id}, новый статус={Status}",
             booking.Id, booking.Status);
@@ -205,6 +212,47 @@ public class BookingService
 
         _logger.LogInformation("Откат отмены бронирования успешно завершен: id={Id}, новый статус={Status}",
             booking.Id, booking.Status);
+    }
+
+    /// <summary>
+    /// Обработка DbUpdateConcurrencyException, повтор операции с перезагрузкой сущности
+    /// </summary>
+    /// <param name="booking"></param>
+    /// <returns></returns>
+    private async Task<bool> ConfirmWithConcurrencyRetryAsync(Booking booking)
+    {
+        bool saveFailed = false;
+        int tryCount = 0;
+
+        do
+        {
+            try
+            {
+                await _repository.SaveAsync(booking);
+                saveFailed = false;
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                if (tryCount == DB_CONCURRENCY_TRIES_COUNT)
+                    throw new BusinessException($"Исчерпано количество попыток обработки DbUpdateConcurrencyException при сохранении бронирования id={booking.Id}");
+
+                saveFailed = true;
+                tryCount++;
+
+                await ex.Entries.Single().ReloadAsync();
+
+                if (booking.Status == BookingStatus.CancellationPending)
+                {
+                    _logger.LogWarning("Бронирование с id={BookingId} уже было отменено, невозможно подтвердить", booking.Id);
+                    return false;
+                }
+
+                booking.Confirm();
+            }
+
+        } while (saveFailed);
+
+        return true;
     }
 
     // TODO: Task 02 — реализовать агрегирующий запрос статистики бронирований

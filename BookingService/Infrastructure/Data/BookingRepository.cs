@@ -11,7 +11,6 @@ public class BookingRepository
 {
     private readonly BookingDbContext _context;
     private const int TOP_RESOURCES_COUNT = 5;
-    private const int DB_CONCURRENCY_TRIES_COUNT = 10;
     public BookingRepository(BookingDbContext context)
     {
         _context = context;
@@ -70,37 +69,6 @@ public class BookingRepository
             _context.Bookings.Add(booking);
 
         await _context.SaveChangesAsync();
-    }
-
-    /// <summary>
-    /// Обработка DbUpdateConcurrencyException, повтор операции с перезагрузкой сущности
-    /// </summary>
-    /// <param name="booking"></param>
-    /// <returns></returns>
-    public async Task ConcurrencyBulkSaveAsync(Booking booking)
-    {
-        bool saveFailed;
-        int tryCount;
-
-        do
-        {
-            saveFailed = false;
-            tryCount = 0;
-
-            try
-            {
-                await SaveAsync(booking);
-            }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                saveFailed = true;
-                tryCount++;
-
-                // Update the values of the entity that failed to save from the store 
-                ex.Entries.Single().Reload();
-            }
-
-        } while (saveFailed && tryCount <= DB_CONCURRENCY_TRIES_COUNT);
     }
 
     public async Task<StatisticsResponse> GetStatisticsAsync()
