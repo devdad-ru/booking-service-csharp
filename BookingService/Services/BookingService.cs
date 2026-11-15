@@ -157,7 +157,12 @@ public class BookingService
 
         booking.Confirm();
 
-        await ConcurrencyBulkSaveAsync(booking);
+        var saveResult = await ConfirmWithConcurrencyRetryAsync(booking);
+        if (!saveResult)
+        {
+            _logger.LogWarning("Бронирование с id={BookingId} уже было отменено, невозможно подтвердить", booking.Id);
+            return;
+        }
 
         _logger.LogInformation("Бронирование успешно подтверждено: id={Id}, новый статус={Status}",
             booking.Id, booking.Status);
@@ -214,7 +219,7 @@ public class BookingService
     /// </summary>
     /// <param name="booking"></param>
     /// <returns></returns>
-    private async Task ConcurrencyBulkSaveAsync(Booking booking)
+    private async Task<bool> ConfirmWithConcurrencyRetryAsync(Booking booking)
     {
         bool saveFailed = false;
         int tryCount = 0;
@@ -239,13 +244,15 @@ public class BookingService
                 if (booking.Status == BookingStatus.CancellationPending)
                 {
                     _logger.LogWarning("Бронирование с id={BookingId} уже было отменено, невозможно подтвердить", booking.Id);
-                    return;
+                    return false;
                 }
 
                 booking.Confirm();
             }
 
         } while (saveFailed);
+
+        return true;
     }
 
     // TODO: Task 02 — реализовать агрегирующий запрос статистики бронирований
