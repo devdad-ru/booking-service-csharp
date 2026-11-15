@@ -145,8 +145,50 @@ public class BookingService
 
         _logger.LogInformation("Найдено бронирование: id={Id}, статус={Status}. Подтверждаем...",
             booking.Id, booking.Status);
+        
+        if (booking.Status == BookingStatus.CancellationPending)
+        {
+            _logger.LogWarning(
+                "Получено подтверждение для бронирования в статусе CancellationPending. " +
+                "Обработка пропущена: bookingId={BookingId}, requestId={RequestId}",
+                booking.Id,
+                requestId);
 
-        booking.Confirm();
+            return;
+        }
+
+        try
+        {
+            booking.Confirm();
+
+            await _repository.SaveAsync(booking);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            _logger.LogWarning(
+                "Обнаружен конфликт конкурентного изменения бронирования: bookingId={BookingId}",
+                booking.Id);
+
+            booking = await _repository.FindByCatalogRequestIdAsync(requestId);
+            if (booking is null)
+            {
+                _logger.LogWarning("Бронирование не найдено по requestId: {RequestId}. Событие проигнорировано.", requestId);
+                return;
+            }
+
+            if (booking.Status == BookingStatus.CancellationPending)
+            {
+                _logger.LogWarning(
+                    "После перезагрузки обнаружен CancellationPending. " +
+                    "Обработка подтверждения пропущена: bookingId={BookingId}",
+                    booking.Id);
+                return;
+            }
+
+            booking.Confirm();
+
+            await _repository.SaveAsync(booking);
+        }
 
         _logger.LogInformation("Бронирование успешно подтверждено: id={Id}, новый статус={Status}",
             booking.Id, booking.Status);

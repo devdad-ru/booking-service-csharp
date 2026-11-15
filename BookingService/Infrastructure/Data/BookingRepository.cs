@@ -80,9 +80,10 @@ public class BookingRepository
             })
             .ToListAsync();
         
-        var topResources = await  _context.Bookings
+        var topResources = await _context.Bookings
             .GroupBy(b => b.ResourceId)
             .OrderByDescending(g => g.Count())
+            .ThenBy(g => g.Key)
             .Take(5)
             .Select(g => new ResourceCount()
             {
@@ -100,6 +101,10 @@ public class BookingRepository
     }
 
     // TODO: Task 03 — найти бронирования, застрявшие в CancellationPending
-    public Task<List<Booking>> FindStuckCancellationsAsync(DateTimeOffset cancellationRequestedBefore)
-        => throw new NotImplementedException();
+    public async Task<List<Booking>> FindStuckCancellationsAsync(DateTimeOffset cancellationRequestedBefore)
+        => await _context.Bookings
+            .Where(b =>
+                b.Status == BookingStatus.CancellationPending &&
+                b.CancellationRequestedAt < cancellationRequestedBefore)
+            .ToListAsync();
 }

@@ -63,8 +63,10 @@ namespace BookingService.Infrastructure.Data.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("user_id");
 
-                    b.Property<long>("Version")
-                        .HasColumnType("bigint");
+                    b.Property<ulong>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("xid8")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -72,7 +74,7 @@ namespace BookingService.Infrastructure.Data.Migrations
                         .HasDatabaseName("idx_bookings_resource_id");
 
                     b.HasIndex("Status")
-                        .HasDatabaseName("idx_bookings_status");
+                        .HasDatabaseName("idx_bookings_cancellation_pending");
 
                     b.HasIndex("UserId")
                         .HasDatabaseName("idx_bookings_user_id");
