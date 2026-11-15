@@ -5,15 +5,11 @@
 namespace BookingService.Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class AddPenddingCancellationsIdx : Migration
+    public partial class AddCancellationPendingIndex : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "idx_bookings_status",
-                table: "bookings");
-
             migrationBuilder.CreateIndex(
                 name: "idx_bookings_cancellation_pending",
                 table: "bookings",
@@ -27,11 +23,6 @@ namespace BookingService.Infrastructure.Data.Migrations
             migrationBuilder.DropIndex(
                 name: "idx_bookings_cancellation_pending",
                 table: "bookings");
-
-            migrationBuilder.CreateIndex(
-                name: "idx_bookings_status",
-                table: "bookings",
-                column: "status");
         }
     }
 }

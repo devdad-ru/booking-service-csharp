@@ -63,17 +63,26 @@ namespace BookingService.Infrastructure.Data.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("user_id");
 
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ResourceId")
                         .HasDatabaseName("idx_bookings_resource_id");
 
-                    b.HasIndex("Status")
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("idx_bookings_user_id");
+
+                    b.HasIndex(new[] { "Status" }, "idx_bookings_cancellation_pending")
                         .HasDatabaseName("idx_bookings_cancellation_pending")
                         .HasFilter("status = 4");
 
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("idx_bookings_user_id");
+                    b.HasIndex(new[] { "Status" }, "idx_bookings_status")
+                        .HasDatabaseName("idx_bookings_status");
 
                     b.ToTable("bookings", (string)null);
                 });

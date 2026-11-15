@@ -224,23 +224,28 @@ public class BookingService
             try
             {
                 await _repository.SaveAsync(booking);
+                saveFailed = false;
             }
             catch (DbUpdateConcurrencyException ex)
             {
+                if (tryCount == DB_CONCURRENCY_TRIES_COUNT)
+                    throw new BusinessException($"Исчерпано количество попыток обработки DbUpdateConcurrencyException при сохранении бронирования id={booking.Id}");
+
                 saveFailed = true;
                 tryCount++;
 
                 await ex.Entries.Single().ReloadAsync();
 
-                booking.Confirm();
-
                 if (booking.Status == BookingStatus.CancellationPending)
                 {
-                    throw new BusinessException($"Бронирование с id={booking.Id} уже было отменено, невозможно подтвердить");
+                    _logger.LogWarning("Бронирование с id={BookingId} уже было отменено, невозможно подтвердить", booking.Id);
+                    return;
                 }
+
+                booking.Confirm();
             }
 
-        } while (saveFailed && tryCount <= DB_CONCURRENCY_TRIES_COUNT);
+        } while (saveFailed);
     }
 
     // TODO: Task 02 — реализовать агрегирующий запрос статистики бронирований

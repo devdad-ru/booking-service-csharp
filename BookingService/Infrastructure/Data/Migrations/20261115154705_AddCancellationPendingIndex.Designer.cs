@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BookingService.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(BookingDbContext))]
-    [Migration("20261029103333_AddPenddingCancellationsIdx")]
-    partial class AddPenddingCancellationsIdx
+    [Migration("20261115154705_AddCancellationPendingIndex")]
+    partial class AddCancellationPendingIndex
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -77,12 +77,15 @@ namespace BookingService.Infrastructure.Data.Migrations
                     b.HasIndex("ResourceId")
                         .HasDatabaseName("idx_bookings_resource_id");
 
-                    b.HasIndex("Status")
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("idx_bookings_user_id");
+
+                    b.HasIndex(new[] { "Status" }, "idx_bookings_cancellation_pending")
                         .HasDatabaseName("idx_bookings_cancellation_pending")
                         .HasFilter("status = 4");
 
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("idx_bookings_user_id");
+                    b.HasIndex(new[] { "Status" }, "idx_bookings_status")
+                        .HasDatabaseName("idx_bookings_status");
 
                     b.ToTable("bookings", (string)null);
                 });
