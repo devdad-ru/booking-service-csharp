@@ -66,9 +66,6 @@ namespace BookingService.Infrastructure.Data.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("user_id");
 
-                    b.Property<long>("Version")
-                        .HasColumnType("bigint");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ResourceId")

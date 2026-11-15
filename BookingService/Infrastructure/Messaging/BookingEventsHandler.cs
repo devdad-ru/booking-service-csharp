@@ -10,7 +10,7 @@ namespace BookingService.Infrastructure.Messaging;
 /// </summary>
 public class BookingEventsHandler :
     IHandleMessages<BookingJobConfirmed>,
-    IHandleMessages<BookingJobDenied>
+    IHandleMessages<BookingJobDenied> 
 {
     private readonly Services.BookingService _bookingService;
 

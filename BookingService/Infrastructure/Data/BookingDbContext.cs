@@ -55,9 +55,6 @@ public class BookingDbContext : DbContext
                 .HasColumnName("catalog_request_id")
                 .HasColumnType("uuid");
 
-            entity.HasIndex(b => b.Status)
-                .HasDatabaseName("idx_bookings_status");
-
             entity.HasIndex(b => b.UserId)
                 .HasDatabaseName("idx_bookings_user_id");
 
@@ -73,9 +70,12 @@ public class BookingDbContext : DbContext
                 .ValueGeneratedOnAddOrUpdate()
                 .IsConcurrencyToken();
 
-            entity.HasIndex(o => o.Status)
-                .HasDatabaseName("idx_bookings_cancellation_pending")
-                .HasFilter("status = 4");
+            entity.HasIndex(b => b.Status, "idx_bookings_status")
+                  .HasDatabaseName("idx_bookings_status");
+
+            entity.HasIndex(b => b.Status, "idx_bookings_cancellation_pending")
+                  .HasDatabaseName("idx_bookings_cancellation_pending")
+                  .HasFilter("status = 4");
         });
 
         modelBuilder.Entity<BookingStatusHistory>(entity =>

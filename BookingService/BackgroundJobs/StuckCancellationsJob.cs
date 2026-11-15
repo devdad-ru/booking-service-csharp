@@ -1,5 +1,4 @@
 ﻿using BookingService.Configuration;
-using BookingService.Entities;
 using BookingService.Infrastructure.Data;
 using BookingService.Infrastructure.Messaging;
 
@@ -34,43 +33,39 @@ public class StuckCancellationsJob : BackgroundService
 
                 var cutoff = _dateTimeProvider.UtcNow() - TimeSpan.FromMinutes(CANCELLATION_TIMEOUT_MINUTES);
                 var pendingBookings = await repository.FindStuckCancellationsAsync(cutoff);
-    
-                if (pendingBookings.Count == 0)
-                {
-                    _logger.LogInformation("StuckCancellationsJob не найдено зависших бронирований");
-                    await Task.Delay(Interval, stoppingToken);
-                    continue;
-                }
 
-                _logger.LogInformation("StuckCancellationsJob Найдено {Count} зависших бронирований", pendingBookings.Count);
-                foreach (var booking in pendingBookings)
-                {
+                if (pendingBookings.Count > 0)
+                { 
+                    _logger.LogInformation("StuckCancellationsJob Найдено {Count} зависших бронирований", pendingBookings.Count);
+                    foreach (var booking in pendingBookings)
+                    {
                     try
-                    {
-                        _logger.LogInformation("StuckCancellationsJob Бронирование Id={Id} обрабатывается...",
-                                booking.Id);
-
-                        if (booking.CatalogRequestId is null)
                         {
-                            _logger.LogWarning("StuckCancellationsJob Бронирование Id={Id} не имеет CatalogRequestId и будет пропущено при обработке",
-                                booking.Id);
-                            continue;
+                            _logger.LogInformation("StuckCancellationsJob Бронирование Id={Id} обрабатывается...",
+                                    booking.Id);
+
+                            if (booking.CatalogRequestId is null)
+                            {
+                                _logger.LogWarning("StuckCancellationsJob Бронирование Id={Id} не имеет CatalogRequestId и будет пропущено при обработке",
+                                    booking.Id);
+                                continue;
+                            }
+
+                            var command = new Infrastructure.Messaging.Contracts.CancelBookingJobByRequestIdRequest
+                            {
+                                RequestId = booking.CatalogRequestId!.Value,
+                                EventId = Guid.NewGuid()
+                            };
+
+                            await bookingEventPublisher.PublishCancelBookingJob(command);
+
+                            _logger.LogInformation("StuckCancellationsJob команда отмены EventId={Id} для бронирования Id={BookingId} успешно отправлена",
+                                    command.EventId, booking.Id);
                         }
-
-                        var command = new Infrastructure.Messaging.Contracts.CancelBookingJobByRequestIdRequest
+                        catch (Exception ex) when (ex is not OperationCanceledException)
                         {
-                            RequestId = booking.CatalogRequestId!.Value,
-                            EventId = Guid.NewGuid()
-                        };
-
-                        await bookingEventPublisher.PublishCancelBookingJob(command);
-
-                        _logger.LogInformation("StuckCancellationsJob команда отмены Id={Id} успешно отправлена",
-                                command.EventId);
-                    }
-                    catch (Exception ex) when (ex is not OperationCanceledException)
-                    {
-                        _logger.LogError("StuckCancellationsJob При обработке зависшего бронирования Id={Id} возникла ошибка {Message}", booking.Id, ex.Message);
+                            _logger.LogError(ex, "StuckCancellationsJob При обработке зависшего бронирования Id={Id} возникла ошибка", booking.Id);
+                        }
                     }
                 }
             }
@@ -80,9 +75,8 @@ public class StuckCancellationsJob : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError("StuckCancellationsJob возникла ошибка: {Message}", ex.Message);
+                _logger.LogError(ex, "StuckCancellationsJob возникла ошибка");
             }
-
 
             await Task.Delay(Interval, stoppingToken);
         }
