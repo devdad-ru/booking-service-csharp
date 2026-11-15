@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BookingService.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(BookingDbContext))]
-    [Migration("20261115183716_AddXminToBookings")]
-    partial class AddXminToBookings
+    [Migration("20261115193744_AddCancellationIndexAndXmin")]
+    partial class AddCancellationIndexAndXmin
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -66,9 +66,10 @@ namespace BookingService.Infrastructure.Data.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("user_id");
 
-                    b.Property<ulong>("Version")
+                    b.Property<uint>("Version")
                         .IsConcurrencyToken()
-                        .HasColumnType("xid8")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
                         .HasColumnName("xmin");
 
                     b.HasKey("Id");
@@ -76,11 +77,13 @@ namespace BookingService.Infrastructure.Data.Migrations
                     b.HasIndex("ResourceId")
                         .HasDatabaseName("idx_bookings_resource_id");
 
-                    b.HasIndex("Status")
-                        .HasDatabaseName("idx_bookings_cancellation_pending");
-
                     b.HasIndex("UserId")
                         .HasDatabaseName("idx_bookings_user_id");
+
+                    b.HasIndex(new[] { "Status" }, "idx_bookings_cancellation_pending")
+                        .HasFilter("status = 4");
+
+                    b.HasIndex(new[] { "Status" }, "idx_bookings_status");
 
                     b.ToTable("bookings", (string)null);
                 });

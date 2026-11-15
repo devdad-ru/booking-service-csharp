@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using BookingService.Exceptions;
 
 namespace BookingService.Entities;

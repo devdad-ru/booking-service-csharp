@@ -142,9 +142,6 @@ public class BookingService
             _logger.LogWarning("Бронирование не найдено по requestId: {RequestId}. Событие проигнорировано.", requestId);
             return;
         }
-
-        _logger.LogInformation("Найдено бронирование: id={Id}, статус={Status}. Подтверждаем...",
-            booking.Id, booking.Status);
         
         if (booking.Status == BookingStatus.CancellationPending)
         {
@@ -156,6 +153,9 @@ public class BookingService
 
             return;
         }
+        
+        _logger.LogInformation("Найдено бронирование: id={Id}, статус={Status}. Подтверждаем...",
+            booking.Id, booking.Status);
 
         try
         {
@@ -169,12 +169,7 @@ public class BookingService
                 "Обнаружен конфликт конкурентного изменения бронирования: bookingId={BookingId}",
                 booking.Id);
 
-            booking = await _repository.FindByCatalogRequestIdAsync(requestId);
-            if (booking is null)
-            {
-                _logger.LogWarning("Бронирование не найдено по requestId: {RequestId}. Событие проигнорировано.", requestId);
-                return;
-            }
+            await _repository.ReloadAsync(booking);
 
             if (booking.Status == BookingStatus.CancellationPending)
             {

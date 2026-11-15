@@ -59,11 +59,13 @@ public class BookingDbContext : DbContext
 
             entity.Property(b => b.Version)
                 .HasColumnName("xmin")
-                .HasColumnType("xid8")
-                .IsConcurrencyToken();
+                .HasColumnType("xid")
+                .IsRowVersion();
 
-            entity.HasIndex(b => b.Status)
-                .HasDatabaseName("idx_bookings_cancellation_pending");
+            entity.HasIndex(b => b.Status, "idx_bookings_status");
+
+            entity.HasIndex(b => b.Status, "idx_bookings_cancellation_pending")
+                .HasFilter("status = 4");
 
             entity.HasIndex(b => b.UserId)
                 .HasDatabaseName("idx_bookings_user_id");
