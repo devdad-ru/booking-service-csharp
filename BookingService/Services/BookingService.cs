@@ -21,6 +21,7 @@ public class BookingService
     private readonly BookingEventPublisher _publisher;
     private readonly ICurrentDateTimeProvider _dateTimeProvider;
     private readonly ILogger<BookingService> _logger;
+    private readonly IConfiguration _configuration;
 
     // [Task 09] Опциональная зависимость — существующие тесты создают сервис без неё
     private readonly INotificationService? _notificationService;
@@ -32,14 +33,14 @@ public class BookingService
         BookingRepository repository,
         BookingEventPublisher publisher,
         ICurrentDateTimeProvider dateTimeProvider,
-        ILogger<BookingService> logger,
-        INotificationService? notificationService = null,
+        ILogger<BookingService> logger, IConfiguration configuration, INotificationService? notificationService = null,
         IMemoryCache? cache = null)
     {
         _repository = repository;
         _publisher = publisher;
         _dateTimeProvider = dateTimeProvider;
         _logger = logger;
+        _configuration = configuration;
         _notificationService = notificationService;
         _cache = cache;
     }
@@ -143,50 +144,58 @@ public class BookingService
             return;
         }
         
-        if (booking.Status == BookingStatus.CancellationPending)
+        if (booking.Status != BookingStatus.AwaitConfirmation)
         {
             _logger.LogWarning(
-                "Получено подтверждение для бронирования в статусе CancellationPending. " +
+                "Получено подтверждение для бронирования, которое находится не в статусе AwaitConfirmation. " +
                 "Обработка пропущена: bookingId={BookingId}, requestId={RequestId}",
                 booking.Id,
                 requestId);
-
             return;
         }
-        
-        _logger.LogInformation("Найдено бронирование: id={Id}, статус={Status}. Подтверждаем...",
-            booking.Id, booking.Status);
 
-        try
+        var tryNumber = 1;
+        var triesCount = _configuration.GetValue("TriesCountToConfirmBooking", 3);
+
+        while (tryNumber <= triesCount)
         {
-            booking.Confirm();
-
-            await _repository.SaveAsync(booking);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            _logger.LogWarning(
-                "Обнаружен конфликт конкурентного изменения бронирования: bookingId={BookingId}",
-                booking.Id);
-
-            await _repository.ReloadAsync(booking);
-
-            if (booking.Status == BookingStatus.CancellationPending)
+            try
             {
-                _logger.LogWarning(
-                    "После перезагрузки обнаружен CancellationPending. " +
-                    "Обработка подтверждения пропущена: bookingId={BookingId}",
-                    booking.Id);
+                _logger.LogInformation("Попытка {TryNumber} подтвердить бронирование бронирование: id={Id}, статус={Status}. Подтверждаем...",
+                    tryNumber, booking.Id, booking.Status);
+                
+                booking.Confirm();
+
+                await _repository.SaveAsync(booking);
+                
+                _logger.LogInformation("Бронирование успешно подтверждено: id={Id}, новый статус={Status}",
+                    booking.Id, booking.Status);
+
                 return;
             }
+            catch (DbUpdateConcurrencyException)
+            {
+                _logger.LogWarning(
+                    "Обнаружен конфликт конкурентного изменения бронирования: bookingId={BookingId}",
+                    booking.Id);
+                
+                await _repository.ReloadAsync(booking);
+                
+                if (booking.Status != BookingStatus.AwaitConfirmation)
+                {
+                    _logger.LogWarning(
+                        "После перезагрузки не обнаружен AwaitConfirmation. " +
+                        "Обработка подтверждения пропущена: bookingId={BookingId}",
+                        booking.Id);
+                    return;
+                }
 
-            booking.Confirm();
-
-            await _repository.SaveAsync(booking);
+                tryNumber += 1;
+            }
         }
 
-        _logger.LogInformation("Бронирование успешно подтверждено: id={Id}, новый статус={Status}",
-            booking.Id, booking.Status);
+        _logger.LogWarning("После {TriesCount} попыток не удалось подтвердить бронирование bookingId = {BookingId}",
+            triesCount, booking.Id);
     }
 
     /// <summary>

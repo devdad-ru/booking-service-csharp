@@ -2,19 +2,21 @@ using BookingService.Infrastructure.Data;
 using BookingService.Infrastructure.Messaging;
 using BookingService.Infrastructure.Messaging.Contracts;
 
-namespace BookingService.Services;
+namespace BookingService.BackgroundJobs;
 
 public class StuckCancellationsJob : BackgroundService
 {
+    private readonly IConfiguration _configuration;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<StuckCancellationsJob> _logger;
     
     public StuckCancellationsJob(
         IServiceScopeFactory scopeFactory,
-        ILogger<StuckCancellationsJob> logger)
+        ILogger<StuckCancellationsJob> logger, IConfiguration configuration)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _configuration = configuration;
     }
     
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -33,8 +35,10 @@ public class StuckCancellationsJob : BackgroundService
                     ex,
                     "Ошибка при обработке зависших отмен");
             }
+            
+            var delayMinutes = _configuration.GetValue("IntervalFoStuckCancellationJobMinutes", 1);
 
-            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+            await Task.Delay(TimeSpan.FromMinutes(delayMinutes), stoppingToken);
         }
     }
 
@@ -45,7 +49,9 @@ public class StuckCancellationsJob : BackgroundService
         var repository = scope.ServiceProvider.GetRequiredService<BookingRepository>();
         var publisher = scope.ServiceProvider.GetRequiredService<BookingEventPublisher>();
         
-        var timeout = DateTimeOffset.UtcNow.AddMinutes(-5);
+        var timeoutValue = _configuration.GetValue("StuckCancellationsTimeout", 5);
+        
+        var timeout = DateTimeOffset.UtcNow.AddMinutes(-timeoutValue);
         var bookings = await repository.FindStuckCancellationsAsync(timeout);
 
         foreach (var booking in bookings)

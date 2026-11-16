@@ -1,3 +1,4 @@
+using BookingService.BackgroundJobs;
 using BookingService.Configuration;
 using BookingService.Exceptions;
 using BookingService.Infrastructure.Data;
