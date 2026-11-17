@@ -251,6 +251,6 @@ public class BookingService
     public async Task<StatisticsResponse> GetStatistics() => await _repository.GetStatisticsAsync();
 
     // TODO: Task 04 — возвращать историю изменений статусов для указанного бронирования
-    public Task<List<Entities.BookingStatusHistory>> GetBookingHistory(long bookingId)
-        => throw new NotImplementedException();
+    public async Task<List<BookingStatusHistory>> GetBookingHistory(long bookingId)
+        => await _repository.GetBookingHistoryAsync(bookingId);
 }

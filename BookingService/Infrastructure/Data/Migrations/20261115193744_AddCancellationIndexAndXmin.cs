@@ -10,10 +10,6 @@ namespace BookingService.Infrastructure.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "Version",
-                table: "bookings");
-
             migrationBuilder.CreateIndex(
                 name: "idx_bookings_cancellation_pending",
                 table: "bookings",
@@ -27,13 +23,6 @@ namespace BookingService.Infrastructure.Data.Migrations
             migrationBuilder.DropIndex(
                 name: "idx_bookings_cancellation_pending",
                 table: "bookings");
-
-            migrationBuilder.AddColumn<long>(
-                name: "Version",
-                table: "bookings",
-                type: "bigint",
-                nullable: false,
-                defaultValue: 0L);
         }
     }
 }

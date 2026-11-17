@@ -8,7 +8,7 @@ namespace BookingService.Infrastructure.Data.Migrations;
 
 /// <inheritdoc />
 [DbContext(typeof(BookingDbContext))]
-[Migration("20240101000000_InitialCreate")]
+[Migration("20240101000000_InitialCreate")] 
 public partial class InitialCreate : Migration
 {
     /// <inheritdoc />

@@ -16,6 +16,8 @@ public class Booking
     public DateOnly BookedTo { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public Guid? CatalogRequestId { get; private set; }
+    
+    public List<BookingStatusHistory> StatusHistory { get; set; } = [];
 
     // TODO: Task 01 — время, когда была запрошена отмена подтверждённого бронирования
     public DateTimeOffset? CancellationRequestedAt { get; private set; }

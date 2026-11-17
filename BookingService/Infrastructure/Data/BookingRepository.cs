@@ -109,4 +109,11 @@ public class BookingRepository
             .ToListAsync();
     
     public async Task ReloadAsync(Booking booking) => await _context.Entry(booking).ReloadAsync();
+
+    public async Task<List<BookingStatusHistory>> GetBookingHistoryAsync(long bookingId)
+    {
+        return await _context.StatusHistory
+            .Where(h => h.BookingId == bookingId)
+            .ToListAsync();
+    }
 }

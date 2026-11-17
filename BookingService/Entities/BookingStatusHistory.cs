@@ -19,4 +19,6 @@ public class BookingStatusHistory
             StatusTo = statusTo,
             ChangedAt = DateTimeOffset.UtcNow
         };
+
+    public Booking Booking { get; set; }
 }

@@ -84,6 +84,55 @@ namespace BookingService.Infrastructure.Data.Migrations
 
                     b.ToTable("bookings", (string)null);
                 });
+
+            modelBuilder.Entity("BookingService.Entities.BookingStatusHistory", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("BookingId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("booking_id");
+
+                    b.Property<DateTimeOffset>("ChangedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("changed_at");
+
+                    b.Property<int?>("StatusFrom")
+                        .HasColumnType("integer")
+                        .HasColumnName("status_from");
+
+                    b.Property<int>("StatusTo")
+                        .HasColumnType("integer")
+                        .HasColumnName("status_to");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingId");
+
+                    b.ToTable("booking_status_history", (string)null);
+                });
+
+            modelBuilder.Entity("BookingService.Entities.BookingStatusHistory", b =>
+                {
+                    b.HasOne("BookingService.Entities.Booking", "Booking")
+                        .WithMany("StatusHistory")
+                        .HasForeignKey("BookingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_booking_status_history_booking_id");
+
+                    b.Navigation("Booking");
+                });
+
+            modelBuilder.Entity("BookingService.Entities.Booking", b =>
+                {
+                    b.Navigation("StatusHistory");
+                });
 #pragma warning restore 612, 618
         }
     }
