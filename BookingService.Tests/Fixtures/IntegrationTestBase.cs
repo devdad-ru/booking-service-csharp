@@ -49,9 +49,11 @@ public abstract class IntegrationTestBase : IAsyncLifetime
         // IBus мокируем — не нужен реальный RabbitMQ
         BusMock = Substitute.For<IBus>();
 
+        // Контекст передаётся для Задачи 07 (outbox пишется в той же транзакции, что и бронирование)
         var publisher = new BookingEventPublisher(
             BusMock,
-            NullLogger<BookingEventPublisher>.Instance);
+            NullLogger<BookingEventPublisher>.Instance,
+            Context);
 
         BookingService = new Services.BookingService(
             new BookingRepository(Context),

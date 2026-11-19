@@ -53,6 +53,12 @@ public class BookingDbContext : DbContext
                 .HasColumnName("catalog_request_id")
                 .HasColumnType("uuid");
 
+            // TODO: Task 01 — убрать Ignore и настроить маппинг на колонку cancellation_requested_at
+            entity.Ignore(b => b.CancellationRequestedAt);
+
+            // TODO: Task 03 — убрать Ignore и настроить маппинг на системную колонку xmin
+            entity.Ignore(b => b.Version);
+
             entity.HasIndex(b => b.Status)
                 .HasDatabaseName("idx_bookings_status");
 

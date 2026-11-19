@@ -29,7 +29,7 @@ public class Task08_QueryOptimizationTests : IntegrationTestBase
         // Составной индекс критичен для запросов типа:
         // "Есть ли у ресурса X бронирования в период [from, to]?"
         var indexExists = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM pg_indexes " +
+            "SELECT COUNT(*)::int AS \"Value\" FROM pg_indexes " +
             "WHERE tablename = 'bookings' " +
             "AND indexdef LIKE '%resource_id%booked_from%booked_to%' " +
             "OR (tablename = 'bookings' AND indexdef LIKE '%resource_id%' " +
@@ -50,7 +50,7 @@ public class Task08_QueryOptimizationTests : IntegrationTestBase
     {
         // Каждое входящее событие BookingJobConfirmed/Denied делает запрос по этому полю
         var indexExists = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM pg_indexes " +
+            "SELECT COUNT(*)::int AS \"Value\" FROM pg_indexes " +
             "WHERE tablename = 'bookings' AND indexname = 'idx_bookings_catalog_request_id'")
             .SingleAsync();
 
@@ -65,7 +65,7 @@ public class Task08_QueryOptimizationTests : IntegrationTestBase
     {
         // catalog_request_id должен быть уникальным — у каждого бронирования свой requestId
         var isUnique = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM pg_indexes " +
+            "SELECT COUNT(*)::int AS \"Value\" FROM pg_indexes " +
             "WHERE tablename = 'bookings' " +
             "AND indexname = 'idx_bookings_catalog_request_id' " +
             "AND indexdef LIKE '%UNIQUE%'")
@@ -85,7 +85,7 @@ public class Task08_QueryOptimizationTests : IntegrationTestBase
     {
         // Типичный запрос: "все активные бронирования пользователя 42"
         var indexExists = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM pg_indexes " +
+            "SELECT COUNT(*)::int AS \"Value\" FROM pg_indexes " +
             "WHERE tablename = 'bookings' " +
             "AND indexdef LIKE '%user_id%' AND indexdef LIKE '%status%'")
             .SingleAsync();
@@ -103,7 +103,7 @@ public class Task08_QueryOptimizationTests : IntegrationTestBase
     public async Task Index_CreatedAt_Exists()
     {
         var indexExists = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM pg_indexes " +
+            "SELECT COUNT(*)::int AS \"Value\" FROM pg_indexes " +
             "WHERE tablename = 'bookings' AND indexdef LIKE '%created_at%'")
             .SingleAsync();
 
@@ -133,7 +133,7 @@ public class Task08_QueryOptimizationTests : IntegrationTestBase
     {
         // Суммарная проверка: таблица bookings должна иметь как минимум N индексов
         var indexCount = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM pg_indexes WHERE tablename = 'bookings'")
+            "SELECT COUNT(*)::int AS \"Value\" FROM pg_indexes WHERE tablename = 'bookings'")
             .SingleAsync();
 
         // До оптимизации (задачи 01-03) было 4 индекса:

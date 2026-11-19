@@ -20,6 +20,21 @@ public class BookingEntityTests
         return booking;
     }
 
+    /// <summary>
+    /// Подтверждённое бронирование, которое уже началось (вчера).
+    /// Booking.Create не позволяет создать бронь с датой начала в прошлом,
+    /// поэтому дата подменяется через reflection после создания.
+    /// </summary>
+    private static Booking CreateConfirmedBookingStartedYesterday()
+    {
+        var from = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(5));
+        var booking = CreateConfirmedBooking(from, from.AddDays(3));
+        var yesterday = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1));
+        typeof(Booking).GetProperty(nameof(Booking.BookedFrom))!
+            .SetValue(booking, yesterday);
+        return booking;
+    }
+
     // -----------------------------------------------------------------------
     // Базовая стейт-машина (покрывает исходный код + фундамент для задач)
     // -----------------------------------------------------------------------
@@ -39,10 +54,7 @@ public class BookingEntityTests
     [Fact]
     public void Cancel_WhenStatusIsConfirmed_AndDateIsAfterBookingStart_ThrowsBusinessException()
     {
-        var from = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)); // вчера
-        var to = from.AddDays(3);
-        var createdAt = DateTimeOffset.UtcNow.AddDays(-10);
-        var booking = CreateConfirmedBooking(from, to);
+        var booking = CreateConfirmedBookingStartedYesterday();
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var act = () => booking.Cancel(today);

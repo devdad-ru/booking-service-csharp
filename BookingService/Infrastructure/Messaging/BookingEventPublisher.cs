@@ -1,3 +1,4 @@
+using BookingService.Infrastructure.Data;
 using BookingService.Infrastructure.Messaging.Contracts;
 using Rebus.Bus;
 
@@ -12,10 +13,14 @@ public class BookingEventPublisher
     private readonly IBus _bus;
     private readonly ILogger<BookingEventPublisher> _logger;
 
-    public BookingEventPublisher(IBus bus, ILogger<BookingEventPublisher> logger)
+    // TODO: Task 07 — контекст для записи в outbox (опциональный: часть тестов создаёт publisher без него)
+    private readonly BookingDbContext? _dbContext;
+
+    public BookingEventPublisher(IBus bus, ILogger<BookingEventPublisher> logger, BookingDbContext? dbContext = null)
     {
         _bus = bus;
         _logger = logger;
+        _dbContext = dbContext;
     }
 
     /// <summary>

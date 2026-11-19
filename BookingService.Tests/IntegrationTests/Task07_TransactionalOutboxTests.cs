@@ -28,7 +28,7 @@ public class Task07_TransactionalOutboxTests : IntegrationTestBase
     public async Task Migration_OutboxMessagesTable_Exists()
     {
         var tableExists = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM information_schema.tables " +
+            "SELECT COUNT(*)::int AS \"Value\" FROM information_schema.tables " +
             "WHERE table_schema = 'public' AND table_name = 'outbox_messages'")
             .SingleAsync();
 
@@ -47,7 +47,7 @@ public class Task07_TransactionalOutboxTests : IntegrationTestBase
         foreach (var column in requiredColumns)
         {
             var exists = await Context.Database.SqlQueryRaw<int>(
-                "SELECT COUNT(*)::int FROM information_schema.columns " +
+                "SELECT COUNT(*)::int AS \"Value\" FROM information_schema.columns " +
                 "WHERE table_name = 'outbox_messages' AND column_name = {0}",
                 column)
                 .SingleAsync();
@@ -66,7 +66,7 @@ public class Task07_TransactionalOutboxTests : IntegrationTestBase
     {
         // Arrange
         var outboxCountBefore = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM outbox_messages")
+            "SELECT COUNT(*)::int AS \"Value\" FROM outbox_messages")
             .SingleAsync();
 
         // Act
@@ -74,7 +74,7 @@ public class Task07_TransactionalOutboxTests : IntegrationTestBase
 
         // Assert: в outbox появилась как минимум одна новая запись
         var outboxCountAfter = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM outbox_messages")
+            "SELECT COUNT(*)::int AS \"Value\" FROM outbox_messages")
             .SingleAsync();
 
         outboxCountAfter.Should().BeGreaterThan(outboxCountBefore,
@@ -89,7 +89,7 @@ public class Task07_TransactionalOutboxTests : IntegrationTestBase
 
         // Assert: тип сообщения соответствует команде в Catalog Service
         var messageTypeExists = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM outbox_messages " +
+            "SELECT COUNT(*)::int AS \"Value\" FROM outbox_messages " +
             "WHERE message_type LIKE '%CreateBookingJob%'")
             .SingleAsync();
 
@@ -106,7 +106,7 @@ public class Task07_TransactionalOutboxTests : IntegrationTestBase
         await ConfirmBookingAsync(catalogRequestId);
 
         var outboxCountBefore = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM outbox_messages")
+            "SELECT COUNT(*)::int AS \"Value\" FROM outbox_messages")
             .SingleAsync();
 
         // Act
@@ -114,7 +114,7 @@ public class Task07_TransactionalOutboxTests : IntegrationTestBase
 
         // Assert
         var outboxCountAfter = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM outbox_messages")
+            "SELECT COUNT(*)::int AS \"Value\" FROM outbox_messages")
             .SingleAsync();
 
         outboxCountAfter.Should().BeGreaterThan(outboxCountBefore,
@@ -133,7 +133,7 @@ public class Task07_TransactionalOutboxTests : IntegrationTestBase
 
         // Assert
         var messageTypeExists = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM outbox_messages " +
+            "SELECT COUNT(*)::int AS \"Value\" FROM outbox_messages " +
             "WHERE message_type LIKE '%CancelBookingJob%'")
             .SingleAsync();
 
@@ -154,7 +154,7 @@ public class Task07_TransactionalOutboxTests : IntegrationTestBase
 
         // Assert: свежие записи ещё не обработаны OutboxProcessorJob
         var unprocessedCount = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM outbox_messages WHERE processed_at IS NULL")
+            "SELECT COUNT(*)::int AS \"Value\" FROM outbox_messages WHERE processed_at IS NULL")
             .SingleAsync();
 
         unprocessedCount.Should().BeGreaterThan(0,

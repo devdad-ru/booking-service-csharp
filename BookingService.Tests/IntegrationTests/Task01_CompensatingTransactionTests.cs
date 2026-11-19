@@ -121,7 +121,7 @@ public class Task01_CompensatingTransactionTests : IntegrationTestBase
     {
         // Проверяем, что колонка добавлена миграцией
         var columnExists = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM information_schema.columns " +
+            "SELECT COUNT(*)::int AS \"Value\" FROM information_schema.columns " +
             "WHERE table_name = 'bookings' AND column_name = 'cancellation_requested_at'")
             .SingleAsync();
 
