@@ -153,7 +153,7 @@ public class Task03_RaceConditionsTests : IntegrationTestBase
     {
         // Проверяем наличие частичного индекса для выборки зависших отмен
         var indexExists = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM pg_indexes " +
+            "SELECT COUNT(*)::int AS \"Value\" FROM pg_indexes " +
             "WHERE tablename = 'bookings' AND indexname = 'idx_bookings_cancellation_pending'")
             .SingleAsync();
 

@@ -24,7 +24,7 @@ public class Task04_AuditLogTests : IntegrationTestBase
     public async Task Migration_BookingStatusHistoryTable_Exists()
     {
         var tableExists = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM information_schema.tables " +
+            "SELECT COUNT(*)::int AS \"Value\" FROM information_schema.tables " +
             "WHERE table_schema = 'public' AND table_name = 'booking_status_history'")
             .SingleAsync();
 
@@ -43,7 +43,7 @@ public class Task04_AuditLogTests : IntegrationTestBase
         foreach (var column in requiredColumns)
         {
             var exists = await Context.Database.SqlQueryRaw<int>(
-                "SELECT COUNT(*)::int FROM information_schema.columns " +
+                "SELECT COUNT(*)::int AS \"Value\" FROM information_schema.columns " +
                 "WHERE table_name = 'booking_status_history' AND column_name = {0}",
                 column)
                 .SingleAsync();
@@ -65,7 +65,7 @@ public class Task04_AuditLogTests : IntegrationTestBase
 
         // Assert: при создании статус меняется на AwaitConfirmation
         var historyCount = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM booking_status_history " +
+            "SELECT COUNT(*)::int AS \"Value\" FROM booking_status_history " +
             "WHERE booking_id = {0} AND status_to = {1}",
             bookingId, (int)BookingStatus.AwaitConfirmation)
             .SingleAsync();
@@ -85,7 +85,7 @@ public class Task04_AuditLogTests : IntegrationTestBase
 
         // Assert: должна быть запись с status_to = Confirmed
         var confirmedEntryCount = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM booking_status_history " +
+            "SELECT COUNT(*)::int AS \"Value\" FROM booking_status_history " +
             "WHERE booking_id = {0} AND status_to = {1}",
             bookingId, (int)BookingStatus.Confirmed)
             .SingleAsync();
@@ -106,7 +106,7 @@ public class Task04_AuditLogTests : IntegrationTestBase
 
         // Assert
         var cancellationEntryCount = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM booking_status_history " +
+            "SELECT COUNT(*)::int AS \"Value\" FROM booking_status_history " +
             "WHERE booking_id = {0} AND status_to = {1}",
             bookingId, (int)BookingStatus.CancellationPending)
             .SingleAsync();
@@ -129,7 +129,7 @@ public class Task04_AuditLogTests : IntegrationTestBase
 
         // Assert: вторая запись с status_to = Confirmed (первая — при создании+подтверждении)
         var rollbackEntryCount = await Context.Database.SqlQueryRaw<int>(
-            "SELECT COUNT(*)::int FROM booking_status_history " +
+            "SELECT COUNT(*)::int AS \"Value\" FROM booking_status_history " +
             "WHERE booking_id = {0} AND status_to = {1}",
             bookingId, (int)BookingStatus.Confirmed)
             .SingleAsync();

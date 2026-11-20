@@ -147,6 +147,7 @@ public class BookingService
             booking.Id, booking.Status);
 
         booking.Confirm();
+        await _repository.SaveAsync(booking);
 
         _logger.LogInformation("Бронирование успешно подтверждено: id={Id}, новый статус={Status}",
             booking.Id, booking.Status);

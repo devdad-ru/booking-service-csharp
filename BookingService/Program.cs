@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Rebus.Config;
 using Rebus.Routing.TypeBased;
+using Rebus.Serialization;
+using Rebus.Serialization.Custom;
+using Rebus.Topic;
 using Rebus.ServiceProvider;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -57,7 +60,17 @@ builder.Services.AddRebus(
             .Map<CreateBookingJobRequest>(rabbitMqSettings.InputQueue)
             .Map<CancelBookingJobByRequestIdRequest>(rabbitMqSettings.InputQueue)
             .Map<BookingJobConfirmed>(rabbitMqSettings.InputQueue)
-            .Map<BookingJobDenied>(rabbitMqSettings.InputQueue)),
+            .Map<BookingJobDenied>(rabbitMqSettings.InputQueue))
+        // Имена типов на проводе должны совпадать с контрактами Catalog Service (другой namespace и сборка):
+        // из них строятся заголовок rbs2-msg-type и имя топика для Publish/Subscribe
+        .Serialization(s => s.UseCustomMessageTypeNames()
+            .AddWithCustomName<CreateBookingJobRequest>(CatalogMessageTypeNames.CreateBookingJobRequest)
+            .AddWithCustomName<CancelBookingJobByRequestIdRequest>(CatalogMessageTypeNames.CancelBookingJobByRequestIdRequest)
+            .AddWithCustomName<BookingJobConfirmed>(CatalogMessageTypeNames.BookingJobConfirmed)
+            .AddWithCustomName<BookingJobDenied>(CatalogMessageTypeNames.BookingJobDenied)
+            .AllowFallbackToDefaultConvention())
+        .Options(o => o.Register<ITopicNameConvention>(
+            c => new MessageTypeNameTopicConvention(c.Get<IMessageTypeNameConvention>()))),
     onCreated: async bus =>
     {
         await bus.Subscribe<BookingJobConfirmed>();
